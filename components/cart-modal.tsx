@@ -40,24 +40,26 @@ export function CartModal({ isOpen, onClose, onCheckout }: CartModalProps) {
               {/* Cart Items */}
               <div className="space-y-3">
                 {items.map((item) => (
-                  <Card key={item.id}>
+                  <Card key={item.product.id}>
                     <CardContent className="p-4">
                       <div className="flex gap-4">
                         <img
-                          src={item.image_url || "/placeholder.svg"}
-                          alt={item.name}
+                          src={item.product.image_url || "/placeholder.svg"}
+                          alt={item.product.name}
                           className="w-16 h-16 object-cover rounded"
                         />
                         <div className="flex-1">
-                          <h3 className="font-semibold text-sm">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground">R$ {item.price.toFixed(2).replace(".", ",")}</p>
+                          <h3 className="font-semibold text-sm">{item.product.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            R$ {item.product.price.toFixed(2).replace(".", ",")}
+                          </p>
 
                           {/* Quantity Controls */}
                           <div className="flex items-center gap-2 mt-2">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
                               className="h-8 w-8 p-0"
                             >
                               <Minus className="h-3 w-3" />
@@ -66,7 +68,7 @@ export function CartModal({ isOpen, onClose, onCheckout }: CartModalProps) {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
                               className="h-8 w-8 p-0"
                             >
                               <Plus className="h-3 w-3" />
@@ -74,7 +76,7 @@ export function CartModal({ isOpen, onClose, onCheckout }: CartModalProps) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => removeFromCart(item.product.id)}
                               className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                             >
                               <Trash2 className="h-3 w-3" />
@@ -83,7 +85,7 @@ export function CartModal({ isOpen, onClose, onCheckout }: CartModalProps) {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            R$ {(item.price * item.quantity).toFixed(2).replace(".", ",")}
+                            R$ {(item.product.price * item.quantity).toFixed(2).replace(".", ",")}
                           </p>
                         </div>
                       </div>
