@@ -52,18 +52,27 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [supabaseAvailable, setSupabaseAvailable] = useState(false)
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  const supabase = supabaseUrl && supabaseKey ? createBrowserClient(supabaseUrl, supabaseKey) : null
 
   useEffect(() => {
-    fetchOrders()
-    fetchStats()
+    if (supabase) {
+      setSupabaseAvailable(true)
+      fetchOrders()
+      fetchStats()
+    } else {
+      setLoading(false)
+      setSupabaseAvailable(false)
+    }
   }, [])
 
   const fetchOrders = async () => {
+    if (!supabase) return
+
     try {
       const { data, error } = await supabase
         .from("orders")
@@ -84,11 +93,11 @@ export default function AdminDashboard() {
   }
 
   const fetchStats = async () => {
+    if (!supabase) return
+
     try {
-      // Total de pedidos
       const { count: totalOrders } = await supabase.from("orders").select("*", { count: "exact", head: true })
 
-      // Total de receita
       const { data: revenueData } = await supabase
         .from("orders")
         .select("total_amount")
@@ -96,10 +105,8 @@ export default function AdminDashboard() {
 
       const totalRevenue = revenueData?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0
 
-      // Total de clientes únicos
       const { count: totalCustomers } = await supabase.from("customers").select("*", { count: "exact", head: true })
 
-      // Pedidos pendentes
       const { count: pendingOrders } = await supabase
         .from("orders")
         .select("*", { count: "exact", head: true })
@@ -117,6 +124,8 @@ export default function AdminDashboard() {
   }
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase.from("orders").update({ payment_status: newStatus }).eq("id", orderId)
 
@@ -158,11 +167,39 @@ export default function AdminDashboard() {
     return <Badge variant={variants[status] || "outline"}>{labels[status] || status}</Badge>
   }
 
+  if (!supabaseAvailable) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="mb-6">
+            <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Painel Administrativo</h1>
+            <p className="text-gray-600">Kikomiilano</p>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <h2 className="text-lg font-semibold text-yellow-800 mb-2">Configuração Necessária</h2>
+            <p className="text-yellow-700 text-sm">
+              Para acessar o painel administrativo, configure as variáveis de ambiente do Supabase no seu provedor de
+              hospedagem:
+            </p>
+            <ul className="text-yellow-700 text-sm mt-2 text-left">
+              <li>• NEXT_PUBLIC_SUPABASE_URL</li>
+              <li>• NEXT_PUBLIC_SUPABASE_ANON_KEY</li>
+            </ul>
+          </div>
+          <Button onClick={() => (window.location.href = "/")} variant="outline">
+            Voltar à Página Inicial
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando dashboard...</p>
         </div>
       </div>
@@ -170,15 +207,13 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-50">
+    <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-serif font-bold text-gray-900 mb-2">Painel Administrativo</h1>
           <p className="text-gray-600">Kikomiilano - Gestão de Pedidos</p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -221,7 +256,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Filters */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Filtros</CardTitle>
@@ -260,7 +294,6 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Orders Table */}
         <Card>
           <CardHeader>
             <CardTitle>Pedidos ({filteredOrders.length})</CardTitle>
